@@ -37,6 +37,8 @@ using namespace System;
 //using namespace System::IO::Ports;
 using namespace System::Threading;
 
+using namespace System;
+using namespace System::IO;
 
 #include "SerieCLI.h"
 
@@ -143,8 +145,8 @@ public:
 		//fin ajout tuto11
 
 		// Load the texture
-		//GLuint Texture = loadDDS("uvtemplate.DDS");
-		GLuint Texture = loadDDS("Image/uvtemplate.DDS");
+		GLuint Texture = loadDDS("Image/de6.DDS");
+		//GLuint Texture = loadDDS("Image/Sans titre.DDS");
 
 		// Get a handle for our "myTextureSampler" uniform
 		GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
@@ -284,26 +286,19 @@ public:
 
 			// Compute the MVP matrix from keyboard and mouse input
 			//computeMatricesFromInputs();
-			computeMatricesFromInputsQuater(_quater.x,_quater.y,_quater.z, _quater.w);
+			computeMatricesFromInputsQuater();
 			glm::mat4 ProjectionMatrix = getProjectionMatrix();
 			glm::mat4 ViewMatrix = getViewMatrix();
 			//glm::mat4 ModelMatrix = glm::mat4(1.0);
 
-//			vec3 gPosition(0.0f, 0.0f, 0.5f);
 			vec3 gPosition(0.0f, 0.0f, 0.0f);
-			vec3 gPosition2(0.0f, 0.0f, 0.0f);
 
-			
 			quat gOrientationQuat;
 			gOrientationQuat.x = _quater.x / 10000.0;
 			gOrientationQuat.y = _quater.y / 10000.0;
 			gOrientationQuat.z = _quater.z / 10000.0;
 			gOrientationQuat.w = _quater.w / 10000.0;
 
-			//gOrientationQuat.x = 0;
-			//gOrientationQuat.y = 0;//1 - nbPoint / 1000.0;
-			//gOrientationQuat.z = 0;
-			//gOrientationQuat.w = sqrt(1 - gOrientationQuat.z*gOrientationQuat.z - gOrientationQuat.y*gOrientationQuat.y - gOrientationQuat.x*gOrientationQuat.x);
 			nbPoint++;
 			if (nbPoint >= 1000) {
 				nbPoint = 0;
@@ -314,19 +309,6 @@ public:
 			gOrientationEuler.y = _quater.y / 10.0 / 360 * (3.14 * 2);
 			gOrientationEuler.z = _quater.x / 10.0 / 360 * (3.14 * 2);
 
-
-			//quaternions
-			vec3 desiredDir = gPosition - gPosition2;
-			vec3 desiredUp = vec3(0.0f, 1.0f, 0.0f); // +Y
-
-													 // Compute the desired orientation
-			quat targetOrientation = normalize(LookAt(desiredDir, desiredUp));
-
-			// And interpolate
-			//gOrientationQuat = RotateTowards(gOrientationQuat, targetOrientation, 1.0f);
-
-
-
 			glm::mat4 RotationMatrix = mat4_cast(gOrientationQuat);
 			glm::mat4 RotationMatrixInit = mat4_cast(gOrientationInitQuat);
 			//euler
@@ -335,7 +317,8 @@ public:
 
 			glm::mat4 TranslationMatrix = translate(mat4(), gPosition); // A bit to the right
 			glm::mat4 ScalingMatrix = scale(mat4(), vec3(1.0f, 1.0f, 1.0f));
-			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix / RotationMatrixInit;
+			glm::mat4 ModelMatrix = TranslationMatrix / RotationMatrixInit * RotationMatrix * ScalingMatrix;
+//			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix;
 
 
 
@@ -391,6 +374,7 @@ public:
 //			sprintf(text, "Qx:%d \t Qy:%d \t Qz:%d \t Qw:%d \t", _quater.x, _quater.y, _quater.z, _quater.w);
 			sprintf(text, "Qx:%0.0f \t Qy:%0.0f \t Qz:%0.0f \t Qw:%0.0f \t", gOrientationQuat.x*10000, gOrientationQuat.y*10000, gOrientationQuat.z*10000, gOrientationQuat.w*10000);
 			printText2D(text, 1, 1, 20);
+			EcrireFichierQuater();
 
 			// Swap buffers
 			glfwSwapBuffers(window);
@@ -495,7 +479,26 @@ public:
 		os = chars;  
 		Marshal::FreeHGlobal(IntPtr((void*)chars));
 	}
+	
+	static void EcrireFichierQuater() {
+		String^ fileName = "quatercsvfile.csv";
+		char text[256];
+		sprintf(text, "%d;%d;%d;%d", _quater.x, _quater.y, _quater.z, _quater.w);
+
+		System::String^ chaine = gcnew System::String(text);
+		StreamWriter^ sw = gcnew StreamWriter(fileName,true);
+		sw->WriteLine(chaine);
+//		sw->WriteLine(DateTime::Now);
+		sw->Close();
+
+	}
+
+
 };
+
+
+
+
 int main()
 {
 	QuaterSerieOpenGLClr::Main();
