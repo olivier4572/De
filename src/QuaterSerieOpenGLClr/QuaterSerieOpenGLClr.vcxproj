@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="controls.cpp" />
+    <ClCompile Include="quaternion_utils.cpp" />
     <ClCompile Include="SerieCLI.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="testOpengl.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="controls.hpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="quaternion_utils.hpp" />
     <ClInclude Include="SerieCLI.h" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="text2D.hpp" />

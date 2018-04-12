@@ -26,6 +26,8 @@ using namespace glm;
 #include "shader.hpp"
 #include "texture.hpp"
 #include "controls.hpp"
+#include "quaternion_utils.hpp" // See quaternion_utils.cpp for RotationBetweenVectors, LookAt and RotateTowards
+
 
 #include <common/text2D.hpp>
 
@@ -35,6 +37,8 @@ using namespace System;
 //using namespace System::IO::Ports;
 using namespace System::Threading;
 
+using namespace System;
+using namespace System::IO;
 
 #include "SerieCLI.h"
 
@@ -141,7 +145,8 @@ public:
 		//fin ajout tuto11
 
 		// Load the texture
-		GLuint Texture = loadDDS("uvtemplate.DDS");
+		GLuint Texture = loadDDS("Image/de6.DDS");
+		//GLuint Texture = loadDDS("Image/Sans titre.DDS");
 
 		// Get a handle for our "myTextureSampler" uniform
 		GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
@@ -238,15 +243,21 @@ public:
 		glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 
 		// Initialize our little text library with the Holstein font
-		initText2D("Holstein.DDS");
+		initText2D("Image/Holstein.DDS");
 
-		quat gOrientationInit;
+		quat gOrientationInitQuat;
+		vec3 gOrientationInitEuler;
 		bool bPressSpace = false;
-		gOrientationInit.x = 0;
-		gOrientationInit.y = 0;
-		gOrientationInit.z = 0;
-		gOrientationInit.w = 0;
+		gOrientationInitQuat.x = 0;
+		gOrientationInitQuat.y = 0;
+		gOrientationInitQuat.z = 0;
+		gOrientationInitQuat.w = 0;
+		gOrientationInitEuler.x = 0;
+		gOrientationInitEuler.y = 0;
+		gOrientationInitEuler.z = 0;
+
 		bool bFirst = true;
+		int nbPoint = 0;
 		do {
 			if (!_continue) {
 				if (!bFirst) { readThread->Join(); }
@@ -275,23 +286,41 @@ public:
 
 			// Compute the MVP matrix from keyboard and mouse input
 			//computeMatricesFromInputs();
-			computeMatricesFromInputsQuater(_quater.x,_quater.y,_quater.z, _quater.w);
+			computeMatricesFromInputsQuater();
 			glm::mat4 ProjectionMatrix = getProjectionMatrix();
 			glm::mat4 ViewMatrix = getViewMatrix();
 			//glm::mat4 ModelMatrix = glm::mat4(1.0);
 
-			vec3 gPosition(0.0f, 0.0f, 0.5f);
-			quat gOrientation;
-			gOrientation.x = _quater.x/10000.0;
-			gOrientation.y = _quater.y/10000.0;
-			gOrientation.z = _quater.z/10000.0;
-			gOrientation.w = _quater.w/10000.0;
+			vec3 gPosition(0.0f, 0.0f, 0.0f);
 
-			glm::mat4 RotationMatrix = mat4_cast(gOrientation);
-			glm::mat4 RotationMatrixInit = mat4_cast(gOrientationInit);
+			quat gOrientationQuat;
+			gOrientationQuat.x = _quater.x / 10000.0;
+			gOrientationQuat.y = _quater.y / 10000.0;
+			gOrientationQuat.z = _quater.z / 10000.0;
+			gOrientationQuat.w = _quater.w / 10000.0;
+
+			nbPoint++;
+			if (nbPoint >= 1000) {
+				nbPoint = 0;
+			}
+
+    			vec3 gOrientationEuler;
+			gOrientationEuler.x = _quater.z / 10.0 / 360 * (3.14 * 2);
+			gOrientationEuler.y = _quater.y / 10.0 / 360 * (3.14 * 2);
+			gOrientationEuler.z = _quater.x / 10.0 / 360 * (3.14 * 2);
+
+			glm::mat4 RotationMatrix = mat4_cast(gOrientationQuat);
+			glm::mat4 RotationMatrixInit = mat4_cast(gOrientationInitQuat);
+			//euler
+//			glm::mat4 RotationMatrix = eulerAngleYXZ(gOrientationEuler.x, gOrientationEuler.y, gOrientationEuler.z);
+//			glm::mat4 RotationMatrixInit = eulerAngleYXZ(gOrientationInitEuler.x, gOrientationInitEuler.y, gOrientationInitEuler.z);
+
 			glm::mat4 TranslationMatrix = translate(mat4(), gPosition); // A bit to the right
 			glm::mat4 ScalingMatrix = scale(mat4(), vec3(1.0f, 1.0f, 1.0f));
-			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix / RotationMatrixInit;
+			glm::mat4 ModelMatrix = TranslationMatrix / RotationMatrixInit * RotationMatrix * ScalingMatrix;
+//			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix;
+
+
 
 			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
@@ -342,18 +371,23 @@ public:
 
 			char text[256];
 			//sprintf(text, "%.2f sec", glfwGetTime());
-			sprintf(text, "Qx:%d \t Qy:%d \t Qz:%d \t Qw:%d \t", _quater.x, _quater.y, _quater.z, _quater.w);
+			sprintf(text, "Qx:%0.0f \t Qy:%0.0f \t Qz:%0.0f \t Qw:%0.0f \t", gOrientationQuat.x*10000, gOrientationQuat.y*10000, gOrientationQuat.z*10000, gOrientationQuat.w*10000);
 			printText2D(text, 1, 1, 20);
+			//EcrireFichierQuater();
 
 			// Swap buffers
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 
 			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && bPressSpace == false) {
-				gOrientationInit.x = _quater.x / 10000.0;
-				gOrientationInit.y = _quater.y / 10000.0;
-				gOrientationInit.z = _quater.z / 10000.0;
-				gOrientationInit.w = _quater.w / 10000.0;
+				gOrientationInitQuat.x = _quater.x / 10000.0;
+				gOrientationInitQuat.y = _quater.y / 10000.0;
+				gOrientationInitQuat.z = _quater.z / 10000.0;
+				gOrientationInitQuat.w = _quater.w / 10000.0;
+				gOrientationInitEuler.x = 0;// _quater.z / 10.0 / 360 * (3.14 * 2);
+				gOrientationInitEuler.y = 0;// _quater.y / 10.0 / 360 * (3.14 * 2);
+				gOrientationInitEuler.z = _quater.x / 10.0 / 360 * (3.14 * 2);
+
 				bPressSpace = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_SPACE) != GLFW_PRESS) {
@@ -441,10 +475,29 @@ public:
 		using namespace Runtime::InteropServices;
 		const char* chars =
 			(const char*)(Marshal::StringToHGlobalAnsi(s)).ToPointer();
-		os = chars;
+		os = chars;  
 		Marshal::FreeHGlobal(IntPtr((void*)chars));
 	}
+	
+	static void EcrireFichierQuater() {
+		String^ fileName = "quatercsvfile.csv";
+		char text[256];
+		sprintf(text, "%d;%d;%d;%d", _quater.x, _quater.y, _quater.z, _quater.w);
+
+		System::String^ chaine = gcnew System::String(text);
+		StreamWriter^ sw = gcnew StreamWriter(fileName,true);
+		sw->WriteLine(chaine);
+//		sw->WriteLine(DateTime::Now);
+		sw->Close();
+
+	}
+
+
 };
+
+
+
+
 int main()
 {
 	QuaterSerieOpenGLClr::Main();
