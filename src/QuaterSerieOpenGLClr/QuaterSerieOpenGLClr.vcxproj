@@ -151,6 +151,11 @@
     <None Include="TextVertexShader.vertexshader" />
     <None Include="TransformVertexShader.vertexshader" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="WSLibFaceDe">
+      <HintPath>..\WSLibFaceDe\bin\Debug\WSLibFaceDe.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

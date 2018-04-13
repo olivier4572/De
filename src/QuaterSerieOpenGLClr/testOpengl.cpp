@@ -33,6 +33,9 @@ using namespace System::IO;
 
 #include "SerieCLI.h"
 
+using namespace WSLibFaceDe;
+
+
 public ref class QuaterSerieOpenGLClr
 {
 
@@ -378,6 +381,9 @@ public:
 			if (glfwGetKey(window, GLFW_KEY_SPACE) != GLFW_PRESS) {
 				bPressSpace = false;
 			}
+
+			WSLibFaceDe::WS Lance();
+
 
 		} // Check if the ESC key was pressed or the window was closed
 		while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
