@@ -1,6 +1,6 @@
 // Include standard headers
 #include <stdio.h>
-//#include <stdlib.h>
+#include <string>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -19,34 +19,19 @@ GLFWwindow* window;
 
 using namespace glm;
 
-//#include <common/shader.hpp>
-//#include <common/texture.hpp>
-//#include <common/controls.hpp>
-
+// récupération des quaternions et affichage console
 #include "shader.hpp"
 #include "texture.hpp"
 #include "controls.hpp"
-#include "quaternion_utils.hpp" // See quaternion_utils.cpp for RotationBetweenVectors, LookAt and RotateTowards
+#include "text2D.hpp"
+//#include "quaternion_utils.hpp" // See quaternion_utils.cpp for RotationBetweenVectors, LookAt and RotateTowards
 
-
-#include <common/text2D.hpp>
-
-// récupération des quaternions et affichage console
 #using <System.dll>
 using namespace System;
-//using namespace System::IO::Ports;
 using namespace System::Threading;
-
-using namespace System;
 using namespace System::IO;
 
 #include "SerieCLI.h"
-
-
-#include <string>
-//#include <iostream>  
-//using namespace std;
-
 
 public ref class QuaterSerieOpenGLClr
 {
