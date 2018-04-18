@@ -20,11 +20,10 @@ GLFWwindow* window;
 using namespace glm;
 
 // récupération des quaternions et affichage console
-#include "shader.hpp"
+//#include "shader.hpp"
 #include "texture.hpp"
 #include "controls.hpp"
 #include "text2D.hpp"
-//#include "quaternion_utils.hpp" // See quaternion_utils.cpp for RotationBetweenVectors, LookAt and RotateTowards
 
 #using <System.dll>
 using namespace System;
@@ -33,8 +32,7 @@ using namespace System::IO;
 
 #include "SerieCLI.h"
 
-using namespace WSLibFaceDe;
-
+#include "OpenGL.h"
 
 public ref class QuaterSerieOpenGLClr
 {
@@ -49,11 +47,10 @@ public ref class QuaterSerieOpenGLClr
 	};
 
 private:
-	static bool _continue;
-//	static SerialPort^ _serialPort;
+	static bool _continueRead; // force a sortir de la boucle Read
+	static bool _erreurRead;  // erreur de lecture port sérir dans la boucle Read
 	static structQuater _quater;
 	static SerieCLI^ serie;
-
 
 public:
 	static int Main()
@@ -62,82 +59,41 @@ public:
 		//Thread^ readThread = gcnew Thread(gcnew ThreadStart(QuaterSerieOpenGLClr::Read));
 		Thread^ readThread;
 		serie = gcnew SerieCLI();
-
-
-
-		// Initialise GLFW
-		if (!glfwInit())
-		{
-			fprintf(stderr, "Failed to initialize GLFW\n");
-			getchar();
+		if (!initGL()) {
 			return -1;
 		}
 
-		glfwWindowHint(GLFW_SAMPLES, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-		// Open a window and create its OpenGL context
-		window = glfwCreateWindow(1024, 768, "Tutorial 0 - Keyboard and Mouse", NULL, NULL);
-		if (window == NULL) {
-			fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
-			getchar();
-			glfwTerminate();
-			return -1;
-		}
-		glfwMakeContextCurrent(window);
-
-		// Initialize GLEW
-		glewExperimental = true; // Needed for core profile
-		if (glewInit() != GLEW_OK) {
-			fprintf(stderr, "Failed to initialize GLEW\n");
-			getchar();
-			glfwTerminate();
-			return -1;
-		}
-
-		// Ensure we can capture the escape key being pressed below
-		glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-		// Hide the mouse and enable unlimited mouvement
-		//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-		// Set the mouse at the center of the screen
-		//glfwPollEvents();
-		//glfwSetCursorPos(window, 1024 / 2, 768 / 2);
-
-		// Dark blue background
-		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
-
-		// Enable depth test
-		glEnable(GL_DEPTH_TEST);
-		// Accept fragment if it closer to the camera than the former one
-		glDepthFunc(GL_LESS);
-
-		// Cull triangles which normal is not towards the camera
-		glEnable(GL_CULL_FACE);
-
+		//initID();
 		GLuint VertexArrayID;
+		GLuint programID;
+		GLuint MatrixID;
+		GLuint ViewMatrixID;
+		GLuint ModelMatrixID;
+		GLuint TextureID;
+
 		glGenVertexArrays(1, &VertexArrayID);
-		glBindVertexArray(VertexArrayID);
 
 		// Create and compile our GLSL program from the shaders
-		GLuint programID = LoadShaders("TransformVertexShader.vertexshader", "TextureFragmentShader.fragmentshader");
+		programID = LoadShaders("TransformVertexShader.vertexshader", "TextureFragmentShader.fragmentshader");
 
 		// Get a handle for our "MVP" uniform
-		GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+		MatrixID = glGetUniformLocation(programID, "MVP");
 		//ajout tuto11
-		GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
-		GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
-		//fin ajout tuto11
+		ViewMatrixID = glGetUniformLocation(programID, "V");
+		ModelMatrixID = glGetUniformLocation(programID, "M");
+
+		// Get a handle for our "myTextureSampler" uniform
+		TextureID = glGetUniformLocation(programID, "myTextureSampler");
+
+
+		glBindVertexArray(VertexArrayID);
 
 		// Load the texture
 		GLuint Texture = loadDDS("Image/de6.DDS");
 		//GLuint Texture = loadDDS("Image/Sans titre.DDS");
 
-		// Get a handle for our "myTextureSampler" uniform
-		GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
+		//initBuffer();
+
 
 		// Our vertices. Tree consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
 		// A cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
@@ -245,25 +201,34 @@ public:
 		gOrientationInitEuler.z = 0;
 
 		bool bFirst = true;
-		int nbPoint = 0;
+		bool bEsc = false;
+		bool bFinProgramme;
 		do {
-			if (!_continue) {
-				if (!bFirst) { readThread->Join(); }
-				if (serie->_serialPort->IsOpen) {
-					serie->_serialPort->Close(); }
-				try
-				{
-					serie->_serialPort->Open();
+			if (!bEsc)
+			{
+				if (!_continueRead) {
+					if (!bFirst) { readThread->Join(); }
+					if (serie->_serialPort->IsOpen) {
+						serie->_serialPort->Close();
+					}
+					try
+					{
+						serie->_serialPort->Open();
+						bFirst = true;
+					}
+					catch (Exception^)
+					{
+						//toujours pas de connection serie
+					}
+					if (serie->_serialPort->IsOpen) {
+						if (bFirst) {
+							readThread = gcnew Thread(gcnew ThreadStart(QuaterSerieOpenGLClr::ReadQuater));
+							readThread->Start();
+							_continueRead = true;
+							bFirst = false;
+						}
+					}
 				}
-				catch (Exception^)
-				{
-					int i=0;
-					i = i + 1;
-				}
-				_continue = true;
-				bFirst = false;
-				readThread = gcnew Thread(gcnew ThreadStart(QuaterSerieOpenGLClr::Read));
-				readThread->Start();
 			}
 
 			// Clear the screen
@@ -287,12 +252,7 @@ public:
 			gOrientationQuat.z = _quater.z / 10000.0;
 			gOrientationQuat.w = _quater.w / 10000.0;
 
-			nbPoint++;
-			if (nbPoint >= 1000) {
-				nbPoint = 0;
-			}
-
-    			vec3 gOrientationEuler;
+			vec3 gOrientationEuler;
 			gOrientationEuler.x = _quater.z / 10.0 / 360 * (3.14 * 2);
 			gOrientationEuler.y = _quater.y / 10.0 / 360 * (3.14 * 2);
 			gOrientationEuler.z = _quater.x / 10.0 / 360 * (3.14 * 2);
@@ -300,13 +260,13 @@ public:
 			glm::mat4 RotationMatrix = mat4_cast(gOrientationQuat);
 			glm::mat4 RotationMatrixInit = mat4_cast(gOrientationInitQuat);
 			//euler
-//			glm::mat4 RotationMatrix = eulerAngleYXZ(gOrientationEuler.x, gOrientationEuler.y, gOrientationEuler.z);
-//			glm::mat4 RotationMatrixInit = eulerAngleYXZ(gOrientationInitEuler.x, gOrientationInitEuler.y, gOrientationInitEuler.z);
+			//			glm::mat4 RotationMatrix = eulerAngleYXZ(gOrientationEuler.x, gOrientationEuler.y, gOrientationEuler.z);
+			//			glm::mat4 RotationMatrixInit = eulerAngleYXZ(gOrientationInitEuler.x, gOrientationInitEuler.y, gOrientationInitEuler.z);
 
 			glm::mat4 TranslationMatrix = translate(mat4(), gPosition); // A bit to the right
 			glm::mat4 ScalingMatrix = scale(mat4(), vec3(1.0f, 1.0f, 1.0f));
 			glm::mat4 ModelMatrix = TranslationMatrix / RotationMatrixInit * RotationMatrix * ScalingMatrix;
-//			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix;
+			//			glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix;
 
 
 
@@ -359,7 +319,7 @@ public:
 
 			char text[256];
 			//sprintf(text, "%.2f sec", glfwGetTime());
-			sprintf(text, "Qx:%0.0f \t Qy:%0.0f \t Qz:%0.0f \t Qw:%0.0f \t", gOrientationQuat.x*10000, gOrientationQuat.y*10000, gOrientationQuat.z*10000, gOrientationQuat.w*10000);
+			sprintf(text, "Qx:%0.0f \t Qy:%0.0f \t Qz:%0.0f \t Qw:%0.0f \t", gOrientationQuat.x * 10000, gOrientationQuat.y * 10000, gOrientationQuat.z * 10000, gOrientationQuat.w * 10000);
 			printText2D(text, 1, 1, 20);
 			//EcrireFichierQuater();
 
@@ -372,8 +332,8 @@ public:
 				gOrientationInitQuat.y = _quater.y / 10000.0;
 				gOrientationInitQuat.z = _quater.z / 10000.0;
 				gOrientationInitQuat.w = _quater.w / 10000.0;
-				gOrientationInitEuler.x = 0;// _quater.z / 10.0 / 360 * (3.14 * 2);
-				gOrientationInitEuler.y = 0;// _quater.y / 10.0 / 360 * (3.14 * 2);
+				gOrientationInitEuler.x = _quater.z / 10.0 / 360 * (3.14 * 2);
+				gOrientationInitEuler.y = _quater.y / 10.0 / 360 * (3.14 * 2);
 				gOrientationInitEuler.z = _quater.x / 10.0 / 360 * (3.14 * 2);
 
 				bPressSpace = true;
@@ -382,18 +342,25 @@ public:
 				bPressSpace = false;
 			}
 
-			WSLibFaceDe::WS Lance();
-
+			bFinProgramme = !_continueRead && bEsc;
+			if (_erreurRead)
+			{
+				_continueRead = false;
+			}
+			bEsc = !(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
+			if (bEsc) {
+				_continueRead = false;
+			};
 
 		} // Check if the ESC key was pressed or the window was closed
-		while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
-			glfwWindowShouldClose(window) == 0);
+		  //while (!bFinProgramme);
+		while (!bFinProgramme);
 
-		readThread->Join();
-		if (serie->_serialPort->IsOpen) { serie->_serialPort->Close(); }
+		if (readThread) readThread->Join();
+		if (serie->_serialPort->IsOpen) {
+			serie->_serialPort->Close();
+		}
 
-
-		_continue = false;
 
 		// Cleanup VBO and shader
 		glDeleteBuffers(1, &vertexbuffer);
@@ -409,55 +376,60 @@ public:
 		return 0;
 	}
 
-	static void Read()
+	static void ReadQuater()
 	{
 		String^ delimStr = "_";
 		array<Char>^ delimiter = delimStr->ToCharArray();
-		while (_continue)
+		structQuater quater;
+		while (_continueRead)
 		{
 			try
 			{
 				array<String^>^ words;
-				try
-				{
-					String^ message = serie->_serialPort->ReadLine();
-					words = message->Split(delimiter);
-				}
-				catch(System::IO::IOException ^){
-					int i = 0;
-					i = i + 1;
-
-				}
+				String^ message = serie->_serialPort->ReadLine();
+				words = message->Split(delimiter);
 				//printf("Trame : %s\n", message);
-				
+
 				if (words->Length == 11) {
 					if (words[1] != "" && words[2] != "" && words[3] != "" && words[4] != "") {
 						std::string b;
 						MarshalString(words[1], b);
-						_quater.timeStamp = std::stoi(b);
+						quater.timeStamp = std::stoi(b);
 						MarshalString(words[2], b);
-						_quater.x = std::stoi(b);
+						quater.x = std::stoi(b);
 						MarshalString(words[3], b);
-						_quater.y = std::stoi(b);
+						quater.y = std::stoi(b);
 						MarshalString(words[4], b);
-						_quater.z = std::stoi(b);
+						quater.z = std::stoi(b);
 
-						if (_quater.x > 10000) { _quater.x = _quater.x - 65536;}
-						if (_quater.y > 10000) { _quater.y = _quater.y - 65536; }
-						if (_quater.z > 10000) { _quater.z = _quater.z - 65536; }
+						if (quater.x > 10000) { quater.x = quater.x - 65536; }
+						if (quater.y > 10000) { quater.y = quater.y - 65536; }
+						if (quater.z > 10000) { quater.z = quater.z - 65536; }
 
 
-						double w = 1.0 - (double(_quater.x) / 10000.0 * double(_quater.x) / 10000.0 + double(_quater.y) / 10000.0*double(_quater.y) / 10000.0 + double(_quater.z) / 10000.0*double(_quater.z) / 10000.0);
+						double w = 1.0 - (double(quater.x) / 10000.0 * double(quater.x) / 10000.0 + double(quater.y) / 10000.0*double(quater.y) / 10000.0 + double(quater.z) / 10000.0*double(quater.z) / 10000.0);
 						w = sqrt(w);
-						_quater.w =(int) (w * 10000.0);
+						quater.w = (int)(w * 10000.0);
+						_quater.x = quater.x;
+						_quater.y = quater.y;
+						_quater.z = quater.z;
+						_quater.w = quater.w;
 						printf("Quater : %d %d %d %d %d\n", _quater.timeStamp, _quater.x, _quater.y, _quater.z, _quater.w);
 					}
 				}
 
 			}
-			catch (TimeoutException ^) {
-				printf("timeOutException");
-				_continue = false;
+			catch (System::IO::IOException ^) {
+				printf("TimeoutException : Port serie, arret thread");
+				_erreurRead = true;
+			}
+			catch (System::TimeoutException ^) {
+				printf("TimeoutException : Port serie");
+				_erreurRead = true;
+			}
+			catch (System::InvalidOperationException ^) {
+				printf("InvalidOperationException : Port ferme");
+				_erreurRead = true;
 			}
 		}
 	}
@@ -466,28 +438,24 @@ public:
 		using namespace Runtime::InteropServices;
 		const char* chars =
 			(const char*)(Marshal::StringToHGlobalAnsi(s)).ToPointer();
-		os = chars;  
+		os = chars;
 		Marshal::FreeHGlobal(IntPtr((void*)chars));
 	}
-	
+
 	static void EcrireFichierQuater() {
 		String^ fileName = "quatercsvfile.csv";
 		char text[256];
 		sprintf(text, "%d;%d;%d;%d", _quater.x, _quater.y, _quater.z, _quater.w);
 
 		System::String^ chaine = gcnew System::String(text);
-		StreamWriter^ sw = gcnew StreamWriter(fileName,true);
+		StreamWriter^ sw = gcnew StreamWriter(fileName, true);
 		sw->WriteLine(chaine);
-//		sw->WriteLine(DateTime::Now);
+		//		sw->WriteLine(DateTime::Now);
 		sw->Close();
 
 	}
 
-
 };
-
-
-
 
 int main()
 {

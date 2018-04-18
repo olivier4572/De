@@ -128,7 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="controls.cpp" />
-    <ClCompile Include="quaternion_utils.cpp" />
+    <ClCompile Include="OpenGL.cpp" />
     <ClCompile Include="SerieCLI.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="testOpengl.cpp" />
@@ -139,7 +139,7 @@
     <ClInclude Include="controls.hpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="quaternion_utils.hpp" />
+    <ClInclude Include="OpenGL.h" />
     <ClInclude Include="SerieCLI.h" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="text2D.hpp" />
@@ -150,11 +150,6 @@
     <None Include="TextVertexShader.fragmentshader" />
     <None Include="TextVertexShader.vertexshader" />
     <None Include="TransformVertexShader.vertexshader" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="WSLibFaceDe">
-      <HintPath>..\WSLibFaceDe\bin\Debug\WSLibFaceDe.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
