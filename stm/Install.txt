@@ -1,0 +1,26 @@
+-------------------------------------------------
+il faut que le module stm32 convertisseur bluetooth - USBserie soit vu par le PC
+	Nucleo-L476RG + X-Nucleo-IDB05A1
+
+	USB driver stlinkV2 : STSW-LINK009
+	utilitaire stlink :STSW-LINK004
+	firmware upgrade : STSW-LINK007
+
+le programme installé est SampleAppThT
+C:\Donnees\stm\STM32CubeExpansion_BLE1_V3.2.0\Projects\Multi\Applications\SampleAppThT
+-------------------------------------------------
+si on veut communiquer avec le sensortile et communniquer via le port serie il faut installer le driver
+en.stsw-stm32102
+	VCP_V1.4.0_Setup
+
+Unzip the file, run the executable, and then go to 
+C:\Program Files (x86)\STMicroelectronics\Software\Virtua­l comport driver in Windows Explorer
+ and double-click either dpinst_amd64.exe for 64 bit systems, or dpinst_x86.exe for 32 bit.
+
+
+le programme utilisé est 
+C:\Donnees\Projet\teststm\STM32CubeFunctionPack_ALLMEMS1_V3.3.0\Projects\Multi\Applications\ALLMEMS1\SW4STM32\STM32L476RG-SensorTile\STM32L4xx-SensorTile
+
+---------------------------------------------------------------------
+
+

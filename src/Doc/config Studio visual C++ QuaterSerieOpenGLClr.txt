@@ -1,0 +1,9 @@
+<ClCompile>
+	...
+	<AdditionalIncludeDirectories>external\glfw-3.1.2\include\GLFW;external\glm-0.9.7.1;external\glew-1.13.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+	<PreprocessorDefinitions>WIN32;_WINDOWS;TW_STATIC;TW_NO_LIB_PRAGMA;TW_NO_DIRECT3D;GLEW_STATIC;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+	<AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+<Link>
+      <AdditionalDependencies>glfw3.lib;GLEW_1130.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>librairies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+</Link>

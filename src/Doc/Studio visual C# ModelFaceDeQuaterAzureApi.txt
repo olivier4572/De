@@ -1,0 +1,3 @@
+Gérer les packages Nuget
+Installer Microsoft.AspNet.WebApi.Client  V5.2.4
+	il ajoutera Newtownsoft.Json.6.0.4
