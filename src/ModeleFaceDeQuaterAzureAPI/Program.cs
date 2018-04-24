@@ -9,13 +9,27 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
+
 namespace ModeleFaceDeQuaterAzureAPI
 {
+
     class Program
     {
-        static void Main(string[] args)
+        static int ResultModel;
+        static string[] argsQuater;
+
+        static int Main(string[] args)
         {
+            argsQuater = args;
+            if (args.Length == 4)
+            {
+                Console.WriteLine("Args0 :{0}", argsQuater[0]);
+                Console.WriteLine("Args0 :{0}", argsQuater[1]);
+                Console.WriteLine("Args0 :{0}", argsQuater[2]);
+            }
             InvokeRequestResponseService().Wait();
+
+            return ResultModel;
         }
         static async Task InvokeRequestResponseService()
         {
@@ -32,16 +46,16 @@ namespace ModeleFaceDeQuaterAzureAPI
                                         "Column 0", "-2"
                                     },
                                     {
-                                        "dim1", "-2"
+                                        "dim1",  argsQuater[0]
                                     },
                                     {
-                                        "dim2", "1"
+                                        "dim2",  argsQuater[1]
                                     },
                                     {
-                                        "dim3", "4577"
+                                        "dim3",  argsQuater[2]
                                     },
                                     {
-                                        "dim4", "8893"
+                                        "dim4", argsQuater[3]
                                     },
                                     {
                                         "resultat", "0"
@@ -106,7 +120,9 @@ namespace ModeleFaceDeQuaterAzureAPI
                         }
                     }
                     //System.IO.File.WriteAllText(@"tst.txt", resultJson);
-                    System.IO.File.WriteAllText(@"tst.txt", Result.ToString());
+                    string path = string.Format("De{0}.txt", Result);
+                    //System.IO.File.WriteAllText(@"tst.txt", Result.ToString());
+                    System.IO.File.WriteAllText(path, Result.ToString());
 
                 }
                 else
@@ -126,19 +142,8 @@ namespace ModeleFaceDeQuaterAzureAPI
                 Console.WriteLine("toto");
 
             }
-        }
-    }
 
-    class A
-    {
-        public JsonToken Results { get; set; }
-    }
-    class B
-    {
-        public JsonToken output1 { get; set; }
-    }
-    class C
-    {
-        public string ScoredLabels { get; set; }
+            ResultModel = 45;
+        }
     }
 }

@@ -25,14 +25,19 @@ using namespace glm;
 #include "controls.hpp"
 #include "text2D.hpp"
 
+//il faut me mettre avant using namespace System; pour éviter   error C2872: 'IServiceProvider' : ambiguous symbol
+#include <shlobj.h> //shellexecute
+
 #using <System.dll>
 using namespace System;
 using namespace System::Threading;
 using namespace System::IO;
 
 #include "SerieCLI.h"
-
 #include "OpenGL.h"
+
+#include <fstream> //ifstream,fichier
+
 
 public ref class QuaterSerieOpenGLClr
 {
@@ -203,7 +208,16 @@ public:
 		bool bFirst = true;
 		bool bEsc = false;
 		bool bFinProgramme;
+		bool bPressTab = false;
+
+		std::string sFace = "NU";
+		double lastTime = glfwGetTime();
+		float lastdeltaTime = 0;
 		do {
+
+			double currentTime = glfwGetTime();
+			float deltaTime = (float)(currentTime - lastTime);
+
 			if (!bEsc)
 			{
 				if (!_continueRead) {
@@ -321,7 +335,15 @@ public:
 			//sprintf(text, "%.2f sec", glfwGetTime());
 			sprintf(text, "Qx:%0.0f \t Qy:%0.0f \t Qz:%0.0f \t Qw:%0.0f \t", gOrientationQuat.x * 10000, gOrientationQuat.y * 10000, gOrientationQuat.z * 10000, gOrientationQuat.w * 10000);
 			printText2D(text, 1, 1, 20);
-			//EcrireFichierQuater();
+			EcrireFichierQuater();
+			
+			std::string s = TestPresenceFichier();
+			if (s != "NU") {
+				sFace = s;
+				SupprimeFace(sFace);
+			}
+			AfficheFace(sFace);
+			
 
 			// Swap buffers
 			glfwSwapBuffers(window);
@@ -338,15 +360,74 @@ public:
 
 				bPressSpace = true;
 			}
-			if (glfwGetKey(window, GLFW_KEY_SPACE) != GLFW_PRESS) {
+			
+			if (glfwGetKey(window, GLFW_KEY_SPACE) != GLFW_PRESS){
 				bPressSpace = false;
 			}
+
+			//if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && bPressTab == false)
+			if (deltaTime - lastdeltaTime >3)
+			{
+				lastdeltaTime = deltaTime;
+				bPressTab = true;
+				HINSTANCE result;
+
+				char text[256];
+				sprintf(text, "%d %d %d %d", _quater.x, _quater.y, _quater.z, _quater.w);
+
+				bool bDebug = false;
+				if (!bDebug)
+				{
+					result = ShellExecute(NULL, NULL, "ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_SHOWDEFAULT);
+				}
+				else
+				{
+					result = ShellExecute(NULL, NULL, "..\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_SHOWDEFAULT);
+				}
+				//			result = ShellExecute(NULL, NULL, "C:\\Donnees\\Projet\\cdr\\De\\git\\De\\src\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe", NULL, NULL, SW_SHOWDEFAULT);
+
+				/*
+				SHELLEXECUTEINFO rSEI = { 0 };
+				rSEI.cbSize = sizeof(rSEI);
+				rSEI.lpVerb = "open";
+				rSEI.lpFile = "..\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe";
+				rSEI.lpParameters = 0;
+				rSEI.nShow = SW_NORMAL;
+				rSEI.fMask = SEE_MASK_NOCLOSEPROCESS;
+
+				int ret = ShellExecuteEx(&rSEI);   // you should check for an error here
+
+				while (TRUE) {
+				DWORD nStatus = MsgWaitForMultipleObjects(
+				1, &rSEI.hProcess, FALSE,
+				INFINITE, QS_ALLINPUT   // drop through on user activity
+				);
+				if (nStatus == WAIT_OBJECT_0) {  // done: the program has ended
+				break;
+				}
+				MSG msg;     // else process some messages while waiting...
+				while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+				DispatchMessage(&msg);
+				}
+				printf("%s\n", msg.wParam);
+
+				}  // launched process has exited
+				*/
+
+
+			}
+
+			if (glfwGetKey(window, GLFW_KEY_TAB) != GLFW_PRESS) {
+				bPressTab = false;
+			}
+
 
 			bFinProgramme = !_continueRead && bEsc;
 			if (_erreurRead)
 			{
 				_continueRead = false;
 			}
+
 			bEsc = !(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 			if (bEsc) {
 				_continueRead = false;
@@ -414,21 +495,22 @@ public:
 						_quater.y = quater.y;
 						_quater.z = quater.z;
 						_quater.w = quater.w;
-						printf("Quater : %d %d %d %d %d\n", _quater.timeStamp, _quater.x, _quater.y, _quater.z, _quater.w);
+						_quater.timeStamp = quater.timeStamp;
+						//printf("Quater : %d %d %d %d %d\n", _quater.timeStamp, _quater.x, _quater.y, _quater.z, _quater.w);
 					}
 				}
 
 			}
 			catch (System::IO::IOException ^) {
-				printf("TimeoutException : Port serie, arret thread");
+				printf("TimeoutException : Port serie, arret thread\n");
 				_erreurRead = true;
 			}
 			catch (System::TimeoutException ^) {
-				printf("TimeoutException : Port serie");
+				printf("TimeoutException : Port serie\n");
 				_erreurRead = true;
 			}
 			catch (System::InvalidOperationException ^) {
-				printf("InvalidOperationException : Port ferme");
+				printf("InvalidOperationException : Port ferme\n");
 				_erreurRead = true;
 			}
 		}
@@ -455,9 +537,102 @@ public:
 
 	}
 
+	static void AfficheFace(std::string sFace) {
+		const char *CstStr = sFace.data();
+		printText2D(CstStr, 50, 50, 20);
+
+	}
+
+	static void SupprimeFace(std::string sFace) {
+		const char *CstStr = sFace.data();
+		//Supprimer le fichier
+		std::remove(CstStr);
+
+	}
+
+	static std::string TestPresenceFichier()
+	{
+		std::string Retour ="NU";
+		//Tester la présence d'un fichier De1.txt, De2.txt....
+		String^ fileName;
+		char text[256];
+
+		WIN32_FIND_DATA File;
+		HANDLE hSearch;
+
+		hSearch = FindFirstFile("De*.txt", &File);
+		if (hSearch != INVALID_HANDLE_VALUE)
+		{
+			do {
+				printf("%s\n", File.cFileName);
+			} while (FindNextFile(hSearch, &File));
+			FindClose(hSearch);
+			Retour = File.cFileName;
+		}
+		/*
+		for (int i = 1; i <= 6 ;i++ )
+		{
+			sprintf(text, "De%d.txt", i);
+			//si le fichier existe
+			if (is_readable(text))
+			{
+				printf ("fichier exist %s\n",text);
+				Retour = i;
+
+			}
+			else
+			{
+				//printf("Fichier inexistant ou non lisible %s \n.",text);
+			}
+		}
+		*/
+		return Retour;
+	}
+
+	static void LectureFichierModele(String^ fileName) {
+		//String^ fileName = "tst.txt";
+		String^ strRead;;
+		std::string b;
+
+		StreamReader^ sr = gcnew StreamReader(fileName);
+		strRead = sr->ReadLine();
+		sr->Close();
+		MarshalString(strRead, b);
+		const char *CstStr1 = b.data();
+		const char *CstStr2 = b.c_str();
+		printText2D(CstStr1, 50, 50, 20);
+
+	}
+
+	static bool is_readable(const std::string & file)
+	{
+		std::ifstream fichier(file.c_str());
+		return !fichier.fail();
+	}
+
+
 };
+
+// trouver le chemin (uniquement) de l'application 
+void GetChemin(char *chemin, DWORD taille)
+{
+	char *c;
+	c = chemin + GetModuleFileName(NULL, chemin, taille);
+	while (*c != '\\')
+		c--;
+	*c = 0;
+}
+
 
 int main()
 {
+
+	char chemin[MAX_PATH];
+	GetChemin(chemin, MAX_PATH);
+
+	printf("%s\n",chemin);
+	
 	QuaterSerieOpenGLClr::Main();
+
+	printf("Au revoir");
 }
