@@ -16,18 +16,31 @@ namespace ModeleFaceDeQuaterAzureAPI
     class Program
     {
         static int ResultModel;
-        static string[] argsQuater;
+        static string[] argsQuater = new string[4];
 
         static int Main(string[] args)
         {
-            argsQuater = args;
             if (args.Length == 4)
             {
+                argsQuater = args;
                 Console.WriteLine("Args0 :{0}", argsQuater[0]);
-                Console.WriteLine("Args0 :{0}", argsQuater[1]);
-                Console.WriteLine("Args0 :{0}", argsQuater[2]);
+                Console.WriteLine("Args1 :{0}", argsQuater[1]);
+                Console.WriteLine("Args2 :{0}", argsQuater[2]);
+                Console.WriteLine("Args3 :{0}", argsQuater[3]);
             }
+            else
+            {
+                //face 6 , 9;-65;-1260;9920
+                argsQuater[0] = "9";
+                argsQuater[1] = "-65";
+                argsQuater[2] = "-1260";
+                argsQuater[3] = "9920";
+
+            }
+            long dureeTicks = DateTime.Now.Ticks;
+            double dureeSec;
             InvokeRequestResponseService().Wait();
+            dureeSec = (DateTime.Now.Ticks - dureeTicks)/10000000.0;
 
             return ResultModel;
         }
@@ -120,7 +133,7 @@ namespace ModeleFaceDeQuaterAzureAPI
                         }
                     }
                     //System.IO.File.WriteAllText(@"tst.txt", resultJson);
-                    string path = string.Format("De{0}.txt", Result);
+                    string path = string.Format("De\\De{0}.txt", Result);
                     //System.IO.File.WriteAllText(@"tst.txt", Result.ToString());
                     System.IO.File.WriteAllText(path, Result.ToString());
 
@@ -136,7 +149,7 @@ namespace ModeleFaceDeQuaterAzureAPI
                     string responseContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine(responseContent);
 
-                    System.IO.File.WriteAllText(@"tst.txt", "Faild");
+                    System.IO.File.WriteAllText(@"De\\erreur.txt", "Faild");
 
                 }
                 Console.WriteLine("toto");

@@ -38,6 +38,8 @@ using namespace System::IO;
 
 #include <fstream> //ifstream,fichier
 
+#define DEBUG false;
+
 
 public ref class QuaterSerieOpenGLClr
 {
@@ -221,7 +223,10 @@ public:
 			if (!bEsc)
 			{
 				if (!_continueRead) {
-					if (!bFirst) { readThread->Join(); }
+					if (!bFirst) {
+						readThread->Join(); 
+						delete readThread;
+					}
 					if (serie->_serialPort->IsOpen) {
 						serie->_serialPort->Close();
 					}
@@ -230,9 +235,14 @@ public:
 						serie->_serialPort->Open();
 						bFirst = true;
 					}
-					catch (Exception^)
+					catch (Exception^ e)
 					{
 						//toujours pas de connection serie
+						System::String^ chaine = gcnew System::String("");
+						chaine = chaine->Concat(e->Message);
+						Log(chaine, "MainSerie");
+						delete chaine;
+
 					}
 					if (serie->_serialPort->IsOpen) {
 						if (bFirst) {
@@ -342,8 +352,17 @@ public:
 				sFace = s;
 				SupprimeFace(sFace);
 			}
-			AfficheFace(sFace);
-			
+			std::string sFaceSub;
+			if (sFace.length()>6)
+			{
+				sFaceSub = sFace.substr(2, sFace.length() - 6);
+			}
+			else
+			{
+				sFaceSub = sFace;
+			}
+			AfficheFace(sFaceSub);
+			//AfficheFace(sFace);
 
 			// Swap buffers
 			glfwSwapBuffers(window);
@@ -366,7 +385,7 @@ public:
 			}
 
 			//if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && bPressTab == false)
-			if (deltaTime - lastdeltaTime >3)
+			if (deltaTime - lastdeltaTime > 0.5)
 			{
 				lastdeltaTime = deltaTime;
 				bPressTab = true;
@@ -375,15 +394,11 @@ public:
 				char text[256];
 				sprintf(text, "%d %d %d %d", _quater.x, _quater.y, _quater.z, _quater.w);
 
-				bool bDebug = false;
-				if (!bDebug)
-				{
-					result = ShellExecute(NULL, NULL, "ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_SHOWDEFAULT);
-				}
-				else
-				{
-					result = ShellExecute(NULL, NULL, "..\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_SHOWDEFAULT);
-				}
+#if DEBUG
+				result = ShellExecute(NULL, NULL, "..\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_SHOWMINIMIZED);
+#else
+				result = ShellExecute(NULL, NULL, "ModeleFaceDeQuaterAzureAPI.exe", text, NULL, SW_HIDE);
+#endif
 				//			result = ShellExecute(NULL, NULL, "C:\\Donnees\\Projet\\cdr\\De\\git\\De\\src\\x64\\Debug\\ModeleFaceDeQuaterAzureAPI.exe", NULL, NULL, SW_SHOWDEFAULT);
 
 				/*
@@ -426,6 +441,7 @@ public:
 			if (_erreurRead)
 			{
 				_continueRead = false;
+				_erreurRead = false;
 			}
 
 			bEsc = !(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
@@ -453,8 +469,46 @@ public:
 		// Close OpenGL window and terminate GLFW
 		glfwTerminate();
 
+		delete serie;
 
 		return 0;
+	}
+
+	static void Log(System::String^ message, System::String^ titre) {
+#if DEBUG
+		String^ fileName = "..//X64//DEBUG//Log//";
+#else
+		String^ fileName = "Log//";
+#endif
+
+		fileName = fileName->Concat(fileName,"log", titre, ".log");
+
+		/* Exemple
+		char text[256];
+		sprintf(text, "%d;%d;%d;%d", _quater.x, _quater.y, _quater.z, _quater.w);
+		System::String^ chaine = gcnew System::String(text);
+		*/
+		try
+		{
+			StreamWriter^ sw = gcnew StreamWriter(fileName, true);
+			try
+			{
+				message = message->Concat(DateTime::Now, ":", message);
+				sw->WriteLine(message);
+				//		sw->WriteLine(DateTime::Now);
+				sw->Close();
+			}
+			finally
+			{
+				delete sw;
+			}
+
+		}
+		catch (const std::exception&)
+		{
+			//pas de log d'une erreur log
+		}
+
 	}
 
 	static void ReadQuater()
@@ -473,46 +527,68 @@ public:
 
 				if (words->Length == 11) {
 					if (words[1] != "" && words[2] != "" && words[3] != "" && words[4] != "") {
-						std::string b;
-						MarshalString(words[1], b);
-						quater.timeStamp = std::stoi(b);
-						MarshalString(words[2], b);
-						quater.x = std::stoi(b);
-						MarshalString(words[3], b);
-						quater.y = std::stoi(b);
-						MarshalString(words[4], b);
-						quater.z = std::stoi(b);
+						try
+						{
+							std::string b;
+							MarshalString(words[1], b);
+							//b = "2854472289"; // provoque l'erreur
+							quater.timeStamp = std::stoi(b);
+							MarshalString(words[2], b);
+							quater.x = std::stoi(b);
+							MarshalString(words[3], b);
+							quater.y = std::stoi(b);
+							MarshalString(words[4], b);
+							quater.z = std::stoi(b);
 
-						if (quater.x > 10000) { quater.x = quater.x - 65536; }
-						if (quater.y > 10000) { quater.y = quater.y - 65536; }
-						if (quater.z > 10000) { quater.z = quater.z - 65536; }
+							if (quater.x > 10000) { quater.x = quater.x - 65536; }
+							if (quater.y > 10000) { quater.y = quater.y - 65536; }
+							if (quater.z > 10000) { quater.z = quater.z - 65536; }
 
 
-						double w = 1.0 - (double(quater.x) / 10000.0 * double(quater.x) / 10000.0 + double(quater.y) / 10000.0*double(quater.y) / 10000.0 + double(quater.z) / 10000.0*double(quater.z) / 10000.0);
-						w = sqrt(w);
-						quater.w = (int)(w * 10000.0);
-						_quater.x = quater.x;
-						_quater.y = quater.y;
-						_quater.z = quater.z;
-						_quater.w = quater.w;
-						_quater.timeStamp = quater.timeStamp;
-						//printf("Quater : %d %d %d %d %d\n", _quater.timeStamp, _quater.x, _quater.y, _quater.z, _quater.w);
+							double w = 1.0 - (double(quater.x) / 10000.0 * double(quater.x) / 10000.0 + double(quater.y) / 10000.0*double(quater.y) / 10000.0 + double(quater.z) / 10000.0*double(quater.z) / 10000.0);
+							w = sqrt(w);
+							quater.w = (int)(w * 10000.0);
+							_quater.x = quater.x;
+							_quater.y = quater.y;
+							_quater.z = quater.z;
+							_quater.w = quater.w;
+							_quater.timeStamp = quater.timeStamp;
+							printf("Quater : %d %d %d %d %d\n", _quater.timeStamp, _quater.x, _quater.y, _quater.z, _quater.w);
+						}
+						catch (System::Runtime::InteropServices::SEHException^ e)
+						{
+							System::String^ chaine = gcnew System::String("");
+							chaine = chaine->Concat(e->Message);
+							Log(chaine, "ReadQuater");
+							delete chaine;
+
+						}
 					}
 				}
 
 			}
-			catch (System::IO::IOException ^) {
+			catch (System::IO::IOException ^ ) {
 				printf("TimeoutException : Port serie, arret thread\n");
+				System::String^ chaine = gcnew System::String("TimeoutException : Port serie, arret thread\n");
 				_erreurRead = true;
+				Log(chaine, "ReadQuaterSerie");
+				delete chaine;
 			}
 			catch (System::TimeoutException ^) {
 				printf("TimeoutException : Port serie\n");
+				System::String^ chaine = gcnew System::String("TimeoutException : Port serie\n");
 				_erreurRead = true;
+				Log(chaine, "ReadQuaterSerie");
+				delete chaine;
 			}
 			catch (System::InvalidOperationException ^) {
 				printf("InvalidOperationException : Port ferme\n");
+				System::String^ chaine = gcnew System::String("InvalidOperationException : Port ferme\n");
 				_erreurRead = true;
+				Log(chaine, "ReadQuaterSerie");
+				delete chaine;
 			}
+
 		}
 	}
 
@@ -525,29 +601,57 @@ public:
 	}
 
 	static void EcrireFichierQuater() {
-		String^ fileName = "quatercsvfile.csv";
+#if DEBUG
+		String^ fileName = "..//X64//DEBUG//Donnees//quatercsvfile.csv";
+#else
+		String^ fileName = "Donnees//quatercsvfile.csv";
+#endif
+
 		char text[256];
 		sprintf(text, "%d;%d;%d;%d", _quater.x, _quater.y, _quater.z, _quater.w);
 
-		System::String^ chaine = gcnew System::String(text);
-		StreamWriter^ sw = gcnew StreamWriter(fileName, true);
-		sw->WriteLine(chaine);
-		//		sw->WriteLine(DateTime::Now);
-		sw->Close();
+		try
+		{
+			System::String^ chaine = gcnew System::String(text);
 
+			StreamWriter^ sw = gcnew StreamWriter(fileName, true);
+			try
+			{
+				sw->WriteLine(chaine);
+				sw->Close();
+			}
+			finally
+			{
+			delete sw;
+			delete chaine;
+			}
+		}
+		catch (Exception^ e)
+		{
+			System::String^ chaine = gcnew System::String("The process failed:");
+			chaine = chaine->Concat(e->Message);
+			Log(chaine,"EcrireFichierQuater");
+			delete chaine;
+		}
 	}
 
 	static void AfficheFace(std::string sFace) {
 		const char *CstStr = sFace.data();
 		printText2D(CstStr, 50, 50, 20);
-
 	}
 
 	static void SupprimeFace(std::string sFace) {
+#if DEBUG
+		sFace = "..\\QuaterSerieOpenGLClr\\De\\" + sFace;
 		const char *CstStr = sFace.data();
+#else
+		sFace = "De\\" + sFace;
+		const char *CstStr = sFace.data();
+#endif
+
+
 		//Supprimer le fichier
 		std::remove(CstStr);
-
 	}
 
 	static std::string TestPresenceFichier()
@@ -559,8 +663,13 @@ public:
 
 		WIN32_FIND_DATA File;
 		HANDLE hSearch;
+#if DEBUG
+		//hSearch = FindFirstFile("..\\x64\\Debug\\De\\De*.txt", &File);
+		hSearch = FindFirstFile("..\\QuaterSerieOpenGLClr\\De\\De*.txt", &File);
+#else
+		hSearch = FindFirstFile("De\\De*.txt", &File);
+#endif
 
-		hSearch = FindFirstFile("De*.txt", &File);
 		if (hSearch != INVALID_HANDLE_VALUE)
 		{
 			do {
@@ -595,13 +704,19 @@ public:
 		std::string b;
 
 		StreamReader^ sr = gcnew StreamReader(fileName);
-		strRead = sr->ReadLine();
-		sr->Close();
-		MarshalString(strRead, b);
-		const char *CstStr1 = b.data();
-		const char *CstStr2 = b.c_str();
-		printText2D(CstStr1, 50, 50, 20);
-
+		try
+		{
+			strRead = sr->ReadLine();
+			sr->Close();
+			MarshalString(strRead, b);
+			const char *CstStr1 = b.data();
+			const char *CstStr2 = b.c_str();
+			printText2D(CstStr1, 50, 50, 20);
+		}
+		finally
+		{
+			delete sr;
+		}
 	}
 
 	static bool is_readable(const std::string & file)
