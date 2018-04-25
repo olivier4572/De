@@ -8,7 +8,7 @@ SerieCLI::SerieCLI()
 	_serialPort = gcnew SerialPort();
 
 	// Allow the user to set the appropriate properties.
-	_serialPort->PortName = "COM3";
+	_serialPort->PortName = "COM4";
 	_serialPort->BaudRate = 115200;
 	_serialPort->Parity = System::IO::Ports::Parity::None;
 	_serialPort->DataBits = 7;
