@@ -991,7 +991,7 @@ public:
 
 };
 
-/* trouver le chemin (uniquement) de l'application  */
+/* trouver le chemin (uniquement) de l'application */
 void GetChemin(char *chemin, DWORD taille)
 {
 	char *c;
