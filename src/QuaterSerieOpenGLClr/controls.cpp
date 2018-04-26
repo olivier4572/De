@@ -75,7 +75,7 @@ void computeMatricesFromInputs()
 	horizontalAngle += mouseSpeed * float(1024 / 2 - xpos);
 	verticalAngle += mouseSpeed * float(768 / 2 - ypos);
 
-	/* Direction : Spherical coordinates to Cartesian coordinates conversion */
+	/* Direction: Spherical coordinates to Cartesian coordinates conversion */
 	glm::vec3 direction(
 		cos(verticalAngle) * sin(horizontalAngle),
 		sin(verticalAngle),

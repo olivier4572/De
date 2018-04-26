@@ -68,7 +68,6 @@ private:
 public:
 	static int Main()
 	{
-
 		/*
 		* Thread^ readThread = 
 		*	gcnew Thread(gcnew ThreadStart(QuaterSerieOpenGLClr::Read));
@@ -689,7 +688,7 @@ public:
 		* sprintf(
 		*	text, 
 		*	"%d;%d;%d;%d", 
-		*			_quater.x, 
+		*	_quater.x, 
 		*	_quater.y, 
 		*	_quater.z, 
 		*	_quater.w

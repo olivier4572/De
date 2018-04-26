@@ -7,7 +7,8 @@
 #include <glfw3.h>
 
 
-GLuint loadBMP_custom(const char * imagepath) {
+GLuint loadBMP_custom(const char * imagepath) 
+{
 
 	printf("Reading image %s\n", imagepath);
 
@@ -20,30 +21,50 @@ GLuint loadBMP_custom(const char * imagepath) {
 	unsigned char * data;
 
 	/* Open the file */
-	FILE * file = fopen(imagepath, "rb");
-	if (!file) { printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", imagepath); getchar(); return 0; }
+	FILE * file = fopen(
+		imagepath, 
+		"rb"
+	);
+	if (!file) 
+	{ 
+		printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", 
+			imagepath
+		); 
+		getchar(); 
+		return 0; 
+	}
 
 	/* Read the header, i.e. the 54 first bytes */
 
 	/* If less than 54 bytes are read, problem */
-	if (fread(header, 1, 54, file) != 54) {
+	if (fread(header, 1, 54, file) != 54) 
+	{
 		printf("Not a correct BMP file\n");
 		return 0;
 	}
 	/* A BMP files always begins with "BM" */
-	if (header[0] != 'B' || header[1] != 'M') {
+	if (header[0] != 'B' || header[1] != 'M') 
+	{
 		printf("Not a correct BMP file\n");
 		return 0;
 	}
 	/* Make sure this is a 24bpp file */
-	if (*(int*)&(header[0x1E]) != 0) { printf("Not a correct BMP file\n");    return 0; }
-	if (*(int*)&(header[0x1C]) != 24) { printf("Not a correct BMP file\n");    return 0; }
+	if (*(int*)&(header[0x1E]) != 0) 
+	{ 
+		printf("Not a correct BMP file\n");    
+		return 0; 
+	}
+	if (*(int*)&(header[0x1C]) != 24) 
+	{ 
+		printf("Not a correct BMP file\n");    
+		return 0; 
+	}
 
 	/* Read the information about the image */
-	dataPos = *(int*)&(header[0x0A]);
-	imageSize = *(int*)&(header[0x22]);
-	width = *(int*)&(header[0x12]);
-	height = *(int*)&(header[0x16]);
+	dataPos		= *(int*)&(header[0x0A]);
+	imageSize	= *(int*)&(header[0x22]);
+	width		= *(int*)&(header[0x12]);
+	height		= *(int*)&(header[0x16]);
 
 	/* Some BMP files are misformatted, guess missing information */
 	/* 3 : one byte for each Red, Green and Blue component */
@@ -160,7 +181,8 @@ GLuint loadBMP_custom(const char * imagepath) {
 #define FOURCC_DXT3 0x33545844 /* Equivalent to "DXT3" in ASCII */
 #define FOURCC_DXT5 0x35545844 /* Equivalent to "DXT5" in ASCII */
 
-GLuint loadDDS(const char * imagepath) {
+GLuint loadDDS(const char * imagepath) 
+{
 
 	unsigned char header[124];
 
@@ -168,15 +190,20 @@ GLuint loadDDS(const char * imagepath) {
 
 	/* try to open the file */
 	fp = fopen(imagepath, "rb");
-	if (fp == NULL) {
-		printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", imagepath); getchar();
+	if (fp == NULL) 
+	{
+		printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", 
+			imagepath
+		); 
+		getchar();
 		return 0;
 	}
 
 	/* verify the type of file */
 	char filecode[4];
 	fread(filecode, 1, 4, fp);
-	if (strncmp(filecode, "DDS ", 4) != 0) {
+	if (strncmp(filecode, "DDS ", 4) != 0) 
+	{
 		fclose(fp);
 		return 0;
 	}
@@ -184,11 +211,11 @@ GLuint loadDDS(const char * imagepath) {
 	/* get the surface desc */
 	fread(&header, 124, 1, fp);
 
-	unsigned int height = *(unsigned int*)&(header[8]);
-	unsigned int width = *(unsigned int*)&(header[12]);
-	unsigned int linearSize = *(unsigned int*)&(header[16]);
-	unsigned int mipMapCount = *(unsigned int*)&(header[24]);
-	unsigned int fourCC = *(unsigned int*)&(header[80]);
+	unsigned int height			= *(unsigned int*)&(header[8]);
+	unsigned int width			= *(unsigned int*)&(header[12]);
+	unsigned int linearSize		= *(unsigned int*)&(header[16]);
+	unsigned int mipMapCount	= *(unsigned int*)&(header[24]);
+	unsigned int fourCC			= *(unsigned int*)&(header[80]);
 
 
 	unsigned char * buffer;
@@ -220,7 +247,10 @@ GLuint loadDDS(const char * imagepath) {
 
 	/* Create one OpenGL texture */
 	GLuint textureID;
-	glGenTextures(1, &textureID);
+	glGenTextures(
+		1, 
+		&textureID
+	);
 
 	/* 
 	* "Bind" the newly created texture : 
@@ -240,7 +270,11 @@ GLuint loadDDS(const char * imagepath) {
 	unsigned int offset = 0;
 
 	/* load the mipmaps */
-	for (unsigned int level = 0; level < mipMapCount && (width || height); ++level)
+	for (
+		unsigned int level = 0; 
+		level < mipMapCount && (width || height); 
+		++level
+		)
 	{
 		unsigned int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
 		glCompressedTexImage2D(

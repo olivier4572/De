@@ -164,6 +164,7 @@ GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_pat
 		GL_INFO_LOG_LENGTH, 
 		&InfoLogLength
 	);
+
 	if (InfoLogLength > 0) 
 	{
 		std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
