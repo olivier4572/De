@@ -723,6 +723,7 @@ public:
 		String^ delimStr = "_";
 		array<Char>^ delimiter = delimStr->ToCharArray();
 		structQuater quater;
+		int batt;
 		while (_continueRead)
 		{
 			try
@@ -737,7 +738,8 @@ public:
 					if (words[1] != "" && 
 						words[2] != "" && 
 						words[3] != "" && 
-						words[4] != "") 
+						words[4] != ""
+						) 
 					{
 						try
 						{
@@ -751,6 +753,8 @@ public:
 							quater.y = std::stoi(b);
 							MarshalString(words[4], b);
 							quater.z = std::stoi(b);
+							MarshalString(words[5], b);
+							batt = std::stoi(b);
 
 							if (quater.x > 10000) 
 							{ 
@@ -779,12 +783,13 @@ public:
 							_quater.w = quater.w;
 							_quater.timeStamp = quater.timeStamp;
 							printf(
-								"Quater : %d %d %d %d %d\n",
+								"Quater : %d %d %d %d %d Battery: %d \n",
 								_quater.timeStamp, 
 								_quater.x,
 								_quater.y,
 								_quater.z,
-								_quater.w
+								_quater.w,
+								batt
 							);
 						}
 						catch (
