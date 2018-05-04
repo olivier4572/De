@@ -57,13 +57,20 @@ public ref class QuaterSerieOpenGLClr
 		int w;
 	};
 
+	ref struct structBattery
+	{
+		int charge;
+	};
+
 private:
 	/* force a sortir de la boucle Read */
 	static bool _continueRead;
 	/* erreur de lecture port sérir dans la boucle Read */
 	static bool _erreurRead;  
 	static structQuater _quater;
+	static structBattery _batt;
 	static SerieCLI^ serie;
+	static int battCharge;
 
 public:
 	static int Main()
@@ -269,7 +276,6 @@ public:
 		gOrientationInitQuat.w  = 0;
 		gOrientationInitEuler.x = 0;
 		gOrientationInitEuler.y = 0;
-		gOrientationInitEuler.z = 0;
 
 		bool bFirst = true;
 		bool bEsc	= false;
@@ -497,6 +503,21 @@ public:
 				20
 			);
 
+			/* Display charge level */
+			char text2[64];
+			sprintf(
+				text2,
+				"Charge: %d \t",
+				_batt.charge
+			);
+
+			printText2D(
+				text2,
+				1,
+				520,
+				20
+			);
+
 			EcrireFichierQuater();
 			
 			std::string s = TestPresenceFichier();
@@ -557,6 +578,13 @@ public:
 					_quater.y, 
 					_quater.z, 
 					_quater.w
+				);
+				/* Display charge level */
+				char text2[64];
+				sprintf(
+					text2,
+					"Charge: %d",
+					_batt.charge
 				);
 
 #if DEBUG
@@ -723,7 +751,8 @@ public:
 		String^ delimStr = "_";
 		array<Char>^ delimiter = delimStr->ToCharArray();
 		structQuater quater;
-		int batt;
+		structBattery batt;
+
 		while (_continueRead)
 		{
 			try
@@ -733,12 +762,13 @@ public:
 				words = message->Split(delimiter);
 				//printf("Trame : %s\n", message);
 
-				if (words->Length == 11) 
+				if (words->Length == 11)
 				{
 					if (words[1] != "" && 
 						words[2] != "" && 
 						words[3] != "" && 
-						words[4] != ""
+						words[4] != "" &&
+						words[5] != ""
 						) 
 					{
 						try
@@ -754,7 +784,7 @@ public:
 							MarshalString(words[4], b);
 							quater.z = std::stoi(b);
 							MarshalString(words[5], b);
-							batt = std::stoi(b);
+							batt.charge = std::stoi(b);
 
 							if (quater.x > 10000) 
 							{ 
@@ -782,6 +812,8 @@ public:
 							_quater.z = quater.z;
 							_quater.w = quater.w;
 							_quater.timeStamp = quater.timeStamp;
+							_batt.charge = batt.charge;
+
 							printf(
 								"Quater : %d %d %d %d %d Battery: %d \n",
 								_quater.timeStamp, 
@@ -789,7 +821,7 @@ public:
 								_quater.y,
 								_quater.z,
 								_quater.w,
-								batt
+								_batt.charge
 							);
 						}
 						catch (
@@ -862,11 +894,12 @@ public:
 		char text[256];
 		sprintf(
 			text, 
-			"%d;%d;%d;%d", 
+			"%d;%d;%d;%d;%d", 
 			_quater.x, 
 			_quater.y, 
 			_quater.z, 
-			_quater.w
+			_quater.w,
+			_batt.charge
 		);
 
 		try
@@ -992,7 +1025,6 @@ public:
 		return !fichier.fail();
 	}
 
-
 };
 
 /* trouver le chemin (uniquement) de l'application */
@@ -1004,7 +1036,6 @@ void GetChemin(char *chemin, DWORD taille)
 		c--;
 	*c = 0;
 }
-
 
 int main()
 {
